@@ -57,16 +57,18 @@ The PINN learns both $\psi(x)$ and the corresponding eigenvalue $E$. The quantum
 
 ## Architecture and Hyperparameters
 
-For both adaptive and fixed mesh cases, the following architecture and hyperparameters are used:
-
-| Parameter             | Value         |
-|-----------------------|---------------|
-| Number of layers      | ...           |
-| Neurons per layer     | ...           |
-| Activation function   | ...           |
-| Learning rate         | ...           |
-| Optimizer             | ...           |
-| Number of epochs      | ...           |
+| Parameter                     | Value                         | Parameter                     | Value                         |
+|-------------------------------|-------------------------------|-------------------------------|-------------------------------|
+| Arquitectura                  | FC (64‑64‑64‑64)             | Activación                     | `tanh`                        |
+| $\lambda_{\text{PDE}}$        | 0.3                           | Dominio                        | $x \in [-6,6]$                |
+| $\lambda_{\text{BC}}$         | 1.0                           | Puntos iniciales               | 100                            |
+| $\lambda_{\text{norm}}$       | 3.0                           | Añadidos por refinamiento      | 50                             |
+| $\lambda_{\text{sym}}$        | 5.0                           | Puntos evaluación              | 500                            |
+| $\lambda_{\text{proj}}$       | 0.0 ($n=0$), 10.0 ($n>0$)   | Frecuencia adaptación          | cada 1000 épocas               |
+| Semilla aleatoria             | 42                            | Criterio de adición            | mayor residuo absoluto         |
+| Optimizador                   | Adam                          | LR inicial                      | $5 \times 10^{-5}$             |
+| LR tras puntos máximos        | $1 \times 10^{-4}$            | Puntos máximos                 | 1000                           |
+| Criterio de parada            | estabilización energética     |                               |                               |
 
 ## Loss Function
 
@@ -86,10 +88,25 @@ Where:
 
 Each term can be weighted differently using $\lambda$ coefficients to balance their contributions during training.
 
-## Results
+## Adaptive Mesh Training
 
-Results are generated and saved in `1d_eval.py` after training each state for both adaptive and fixed mesh methods. Metrics and plots include:
+In the adaptive mesh approach, training begins with a relatively small initial mesh and a high learning rate, which allows the neural network and the refinement algorithm to progressively "build" the mesh. During the first stage, points are added based on a residual-based criterion: at every fixed number of epochs, the algorithm identifies regions where the PDE residual is largest and adds new points there, increasing the spatial resolution adaptively. Once the maximum number of points allowed in the mesh is reached, the second stage begins, where the learning rate is reduced to favor fine convergence while keeping the mesh fixed at its optimized configuration. This strategy ensures that the network focuses computational resources on regions where the solution is more complex or the residual is higher, improving accuracy while avoiding unnecessary evaluations in smooth regions.  
 
-- Wave function comparison with analytical solution.  
-- Energy convergence plots.  
-- Residual and loss evolution.
+
+
+### Results for Adaptive Mesh
+
+![Wave function n=0 adaptive](psi_n0_adap.png)  
+![Wave function n=1 adaptive](psi_n1_adap.png)
+
+---
+
+## Fixed Mesh Training
+
+For the fixed mesh approach, the total number of points, convergence criteria, and hyperparameters are set by reference to the adaptive mesh results, providing a fair comparison under equivalent conditions of resolution and training. In this case, the mesh is uniform and fixed throughout the entire training process. The learning rate is kept constant or adjusted according to the fine-tuning stage observed in the adaptive method. Unlike the adaptive strategy, no additional points are added; the network must learn the solution using the pre-defined mesh. This fixed mesh method serves as a baseline to evaluate the benefits of adaptively refining the mesh based on the PDE residual.
+
+
+### Results for Fixed Mesh
+
+![Wave function n=0 fixed](psi_n0_fija.png)  
+![Wave function n=1 fixed](psi_n1_fija.png)
