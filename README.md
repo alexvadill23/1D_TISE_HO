@@ -59,16 +59,16 @@ The PINN learns both $\psi(x)$ and the corresponding eigenvalue $E$. The quantum
 
 | Parameter                     | Value                         | Parameter                     | Value                         |
 |-------------------------------|-------------------------------|-------------------------------|-------------------------------|
-| Arquitectura                  | FC (64‑64‑64‑64)             | Activación                     | `tanh`                        |
-| $\lambda_{\text{PDE}}$        | 0.3                           | Dominio                        | $x \in [-6,6]$                |
-| $\lambda_{\text{BC}}$         | 1.0                           | Puntos iniciales               | 100                            |
-| $\lambda_{\text{norm}}$       | 3.0                           | Añadidos por refinamiento      | 50                             |
-| $\lambda_{\text{sym}}$        | 5.0                           | Puntos evaluación              | 500                            |
-| $\lambda_{\text{proj}}$       | 0.0 ($n=0$), 10.0 ($n>0$)   | Frecuencia adaptación          | cada 1000 épocas               |
-| Semilla aleatoria             | 42                            | Criterio de adición            | mayor residuo absoluto         |
-| Optimizador                   | Adam                          | LR inicial                      | $5 \times 10^{-5}$             |
-| LR tras puntos máximos        | $1 \times 10^{-4}$            | Puntos máximos                 | 1000                           |
-| Criterio de parada            | estabilización energética     |                               |                               |
+| Architecture                  | FC (64‑64‑64‑64)             | Activation                    | `tanh`                        |
+| $\lambda_{\text{PDE}}$        | 0.3                           | Domain                        | $x \in [-6,6]$                |
+| $\lambda_{\text{BC}}$         | 1.0                           | Initial points                | 100                            |
+| $\lambda_{\text{norm}}$       | 3.0                           | Added by refinement           | 50                             |
+| $\lambda_{\text{sym}}$        | 5.0                           | Evaluation points             | 500                            |
+| $\lambda_{\text{proj}}$       | 0.0 ($n=0$), 10.0 ($n>0$)   | Adaptation frequency          | every 1000 epochs             |
+| Random seed                   | 42                            | Addition criterion            | highest absolute residual      |
+| Optimizer                     | Adam                          | Initial LR                    | $5 \times 10^{-5}$             |
+| LR after max points            | $1 \times 10^{-4}$            | Maximum points                | 1000                           |
+| Stopping criterion            | energy stabilization          |                               |                               |
 
 ## Loss Function
 
@@ -96,17 +96,63 @@ In the adaptive mesh approach, training begins with a relatively small initial m
 
 ### Results for Adaptive Mesh
 
-![Wave function n=0 adaptive](psi_n0_adap.png)  
-![Wave function n=1 adaptive](psi_n1_adap.png)
+**Probability Densities:**  
+![Wave function vs analytical solution (n = 0) adaptative](densidad_probabilidad_adaptativa_n0.png)  
+![Wave function vs analytical solution (n = 1) adaptative](densidad_probabilidad_adaptativa_n1.png)
 
----
+**Energy Evolution:**  
+![Energy convergence n=0 adaptive](evolucion_energia_adaptativa_n0.png)  
+![Energy convergence n=1 adaptive](evolucion_energia_adaptativa_n1.png)
 
 ## Fixed Mesh Training
 
-For the fixed mesh approach, the total number of points, convergence criteria, and hyperparameters are set by reference to the adaptive mesh results, providing a fair comparison under equivalent conditions of resolution and training. In this case, the mesh is uniform and fixed throughout the entire training process. The learning rate is kept constant or adjusted according to the fine-tuning stage observed in the adaptive method. Unlike the adaptive strategy, no additional points are added; the network must learn the solution using the pre-defined mesh. This fixed mesh method serves as a baseline to evaluate the benefits of adaptively refining the mesh based on the PDE residual.
-
+For the fixed mesh approach, the total number of points, convergence criteria, and hyperparameters are set by reference to the adaptive mesh results, providing a fair comparison under equivalent conditions of resolution and training. In this case, the mesh is uniform and fixed throughout the entire training process. The learning rate is kept constant 
 
 ### Results for Fixed Mesh
 
-![Wave function n=0 fixed](psi_n0_fija.png)  
-![Wave function n=1 fixed](psi_n1_fija.png)
+**Probability Densities:**  
+![Wave function vs analytical solution (n = 0) fixed](densidad_probabilidad_fija_n0.png)  
+![Wave function vs analytical solution (n = 1) fixed](densidad_probabilidad_fija_n1.png)
+
+**Energy Evolution:**  
+![Energy convergence n=0 fixed](evolucion_energia_fija_n0.png)  
+![Energy convergence n=1 fixed](evolucion_energia_fija_n1.png)
+
+
+## Quantitative Comparison: Adaptive vs Fixed Mesh (Ground State)
+
+| Parameter                           | Adaptive Mesh        | Fixed Mesh          |
+|-------------------------------------|-------------------|-------------------|
+| MSE between wave functions           | 1.49 × 10⁻⁶       | 1.61 × 10⁻⁵       |
+| MSE between probability densities    | 2.28 × 10⁻⁷       | 4.91 × 10⁻⁶       |
+| Predicted energy                     | 0.502402           | 0.501055           |
+| Training time                        | 375.20 s           | 253.08 s           |
+
+* Quantitative comparison between adaptive and fixed mesh for 1D TISE (ground state).*
+
+## Quantitative Comparison: Adaptive vs Fixed Mesh (First Excited State, n=1)
+
+| Parameter                           | Adaptive Mesh        | Fixed Mesh          |
+|-------------------------------------|-------------------|-------------------|
+| MSE between wave functions           | 4.07 × 10⁻⁶       | 3.95 × 10⁻⁶       |
+| MSE between probability densities    | 5.03 × 10⁻⁸       | 6.12 × 10⁻⁷       |
+| Predicted energy                     | 1.499358           | 1.500335           |
+| Training time                        | 1061.46 s          | 924.47 s           |
+
+* Quantitative comparison between adaptive and fixed mesh for 1D TISE (first excited state, n=1).*
+
+  ## Results Analysis for 1D TISE
+
+The results obtained for the ground state (`n=0`) and the first excited state (`n=1`) demonstrate that both the adaptive and fixed mesh approaches allow the PINN to accurately approximate the analytical solutions of the 1D Schrödinger equation.
+
+In the training point histograms, it is evident that the adaptive mesh concentrates more points in regions where the wave function exhibits larger variations or nodes, while fewer points are allocated in smoother regions. This behavior visually illustrates the main advantage of adaptive refinement: computational resources are focused where the network most needs them to accurately capture the physics of the system.
+
+The  probability density plots show excellent visual agreement between the PINN solutions and the analytical results for both adaptive and fixed meshes.
+
+In both mesh approaches, the predicted energy quickly converges to the theoretical value, with relative errors below 0.5%.
+
+Quantitative errors indicate that the adaptive mesh achieves lower MSE  in the ground state, providing a better pointwise approximation across the domain. For the first excited state, both methods achieve very similar MSE values, with the adaptive mesh showing slightly lower errors in the probability density.
+
+Regarding computational efficiency, the fixed mesh is faster, requiring less time to converge for both states. The adaptive mesh spends additional time on the refinement and selection of new points, which can be advantageous in problems with more complex local structures.
+
+In summary, both approaches are valid and accurate for the 1D case. The adaptive mesh offers a slight advantage in precision for the ground state, while the fixed mesh is more efficient in terms of computational time. The choice between the two methods depends on the desired trade-off between accuracy and computational cost for each specific problem.
